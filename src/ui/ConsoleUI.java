@@ -17,9 +17,10 @@ public class ConsoleUI {
     private final String GO_PARENT = "goparent";
     private final String PRINT = "print";
     private final String EXIT = "exit";
+    private final String RETURN = "return";
 
-    Scanner scanner = new Scanner(System.in);
-    JavaFTPClient client = new JavaFTPClient();
+    private Scanner scanner = new Scanner(System.in);
+    private JavaFTPClient client = new JavaFTPClient();
 
     public ConsoleUI() {
         run();
@@ -27,13 +28,11 @@ public class ConsoleUI {
 
     private void run() {
         while (true) {
-
             printMenu();
             String message = getMessageFromKeyboard();
-            if(isCommand(message)) {
+            if (isCommand(message)) {
                 switchCommand(message);
             }
-
         }
     }
 
@@ -48,6 +47,7 @@ public class ConsoleUI {
         System.out.println("Command: '" + CHANGE_DIR + "' - go into another directory.");
         System.out.println("Command: '" + GO_PARENT + "' - go back to parent directory.");
         System.out.println("Command: '" + PRINT + "' - print names of files in current folder.");
+        System.out.println("Command: '" + RETURN + "' - will return you to main menu.");
         System.out.println("Command: '" + EXIT + "' - no comments).");
         System.out.println("Enter the command:");
     }
@@ -86,95 +86,132 @@ public class ConsoleUI {
                 break;
             case EXIT:
                 System.exit(-1);
-            default: break;
+            default:
+                break;
         }
     }
 
     private void doConnect() {
-        String tmp = "";
+        String tempString = "";
         while (true) {
-            System.out.println("Type the host, which you would like to connect: ");
+            System.out.println("Type the host, which you would like to connect: ('return' - will return you to main menu)");
+            tempString = getMessageFromKeyboard();
 
-            tmp = getMessageFromKeyboard();
+            if (isReturnMessage(tempString)) return;
 
-            if(client.connectToHost(tmp) == JavaFTPClient.SUCCESS) {
-                System.out.println("Connected to '" + tmp + "'");
+            if (client.connectToHost(tempString) == JavaFTPClient.SUCCESS) {
+                System.out.println("Connected to '" + tempString + "'");
                 break;
             } else {
-                System.out.println("Unable to connect '" + tmp + "'. Try again.");
+                System.out.println("Unable to connect '" + tempString + "'. Try again.");
             }
         }
     }
 
     private void doLogin() {
-        String user = "";
-        String pass = "";
+        String messageOne = "";
+        String messageTwo = "";
 
         while (true) {
-            System.out.println("Type the username: ");
-            user = getMessageFromKeyboard();
+            System.out.println("Type the username: ('return' - will return you to main menu)");
+            messageOne = getMessageFromKeyboard();
 
-            System.out.println("Type the password: ");
-            pass = getMessageFromKeyboard();
+            if (isReturnMessage(messageOne)) return;
 
-            if(client.logIn(user, pass) == JavaFTPClient.SUCCESS) {
-                System.out.println("Entered user: '" + user + "' with password: '" + pass + "'");
+            System.out.println("Type the password: ('return' - will return you to main menu)");
+            messageTwo = getMessageFromKeyboard();
+
+            if (isReturnMessage(messageTwo)) return;
+
+            int tempInt;
+            if ((tempInt = client.logIn(messageOne, messageTwo)) == JavaFTPClient.SUCCESS) {
+                System.out.println("Entered user: '" + messageOne + "' with password: '" + messageTwo + "'");
                 break;
             } else {
-                System.out.println("Unable to log in - user: '" + user + "' with password: '" + pass + "'");
+                printErrorMessage(tempInt);
+                //System.out.println("Unable to log in - user: '" + messageOne + "' with password: '" + messageTwo + "'");
             }
         }
     }
 
-    private void doDownload(){
-        String tmp = "";
+    private boolean isReturnMessage(String message) {
+        if (message.equals(RETURN)) return true;
+        else return false;
+    }
+
+    private void doDownload() {
+        String tempString = "";
         while (true) {
 
-            System.out.println("Type the file name (with extension) for downloading: ");
-            tmp = getMessageFromKeyboard();
+            System.out.println("Type the file name (with extension) for downloading: ('return' - will return you to main menu)");
+            tempString = getMessageFromKeyboard();
 
-            String filename = tmp;
+            if (isReturnMessage(tempString)) return;
+
+            String filename = tempString;
             File file = new File(filename);
-
-            if(client.downloadFile(tmp, file) == JavaFTPClient.SUCCESS) {
-                System.out.println("Downloaded '" + tmp + "' to '" + file.getAbsolutePath() + "'");
+            int tempInt;
+            if ((tempInt = client.downloadFile(tempString, file)) == JavaFTPClient.SUCCESS) {
+                System.out.println("Downloaded '" + tempString + "' to '" + file.getAbsolutePath() + "'");
                 break;
             } else {
-                System.out.println("Can't download '" + tmp + "' to '" + file.getAbsolutePath() + "'");
+                printErrorMessage(tempInt);
+               // System.out.println("Can't download '" + tempString + "' to '" + file.getAbsolutePath() + "'");
             }
 
         }
     }
 
-    private void doChangeDir(){
-        String tmp = "";
+    private void doChangeDir() {
+        String tempString = "";
         while (true) {
 
-            System.out.println("Type the dirname: ");
-            tmp = getMessageFromKeyboard();
+            System.out.println("Type the dirname: ('return' - will return you to main menu)");
+            tempString = getMessageFromKeyboard();
 
-            if(client.changeDir(tmp) == JavaFTPClient.SUCCESS) {
-                System.out.println("Went to '" + tmp + "'");
+            if (isReturnMessage(tempString)) return;
+            int tempInt;
+            if ((tempInt = client.changeDir(tempString)) == JavaFTPClient.SUCCESS) {
+                System.out.println("Went to '" + tempString + "'");
                 break;
             } else {
-                System.out.println("Can't change current directory to '" + tmp + "'");
+                printErrorMessage(tempInt);
+               // System.out.println("Can't change current directory to '" + tempString + "'");
             }
 
         }
 
     }
-    private void doBackToParent(){
-        if(client.goToParentDirectory() == JavaFTPClient.SUCCESS) {
+
+    private void doBackToParent() {
+        int tempInt;
+        if ((tempInt = client.goToParentDirectory()) == JavaFTPClient.SUCCESS) {
             System.out.println("Went to parent dir: '" + client.getParentDir() + "'");
         } else {
-            System.out.println("Can't change current directory to parent: '" + client.getParentDir() + "'");
+            printErrorMessage(tempInt);
+           // System.out.println("Can't change current directory to parent: '" + client.getParentDir() + "'");
         }
     }
 
-    private void doPrint(){
-        client.printContent();
-        System.out.println("Content printed.");
+    private void doPrint() {
+        int tempInt;
+        if ((tempInt = client.printContent()) == JavaFTPClient.SUCCESS)
+            System.out.println("Content printed.");
+        else printErrorMessage(tempInt);
     }
 
+    private void printErrorMessage(int errorCode) {
+        switch(errorCode) {
+            case JavaFTPClient.NOT_LOGGED:
+                System.out.println("You are not logged.");
+                break;
+            case JavaFTPClient.NOT_CONNECTED:
+                System.out.println("You are not connected.");
+                break;
+            case JavaFTPClient.FAIL:
+                System.out.println("Can't execute this operation.");
+                break;
+        }
+    }
 
 }
